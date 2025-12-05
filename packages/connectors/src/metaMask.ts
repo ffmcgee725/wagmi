@@ -40,14 +40,14 @@ export type MetaMaskParameters = {
   dapp?: CreateMetamaskConnectEVMParameters['dapp'] | undefined
 } & OneOf<
   | {
-      /* Shortcut to connect and sign a message */
-      connectAndSign?: string | undefined
-    }
+    /* Shortcut to connect and sign a message */
+    connectAndSign?: string | undefined
+  }
   | {
-      // TODO: Strongly type `method` and `params`
-      /* Allow `connectWith` any rpc method */
-      connectWith?: { method: string; params: unknown[] } | undefined
-    }
+    // TODO: Strongly type `method` and `params`
+    /* Allow `connectWith` any rpc method */
+    connectWith?: { method: string; params: unknown[] } | undefined
+  }
 >
 
 metaMask.type = 'metaMask' as const
@@ -74,7 +74,7 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
           )
 
           metamaskPromise = createMetamaskConnectEVM({
-            dapp: parameters.dapp ?? {},
+            dapp: parameters.dapp ?? { name: window.location.hostname },
             eventHandlers: {
               accountsChanged: connector.onAccountsChanged.bind(connector),
               chainChanged: connector.onChainChanged.bind(connector),
@@ -111,7 +111,7 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
 
         const instance = await ensureMetamask()
 
-        let accounts: readonly string[] = []
+        let accounts: readonly Address[] = []
         if (connectParams?.isReconnecting) {
           accounts = (await this.getAccounts().catch(() => [])).map((account) =>
             getAddress(account),
@@ -125,11 +125,11 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
           if (!accounts?.length) {
             if (parameters.connectAndSign || parameters.connectWith) {
               if (parameters.connectAndSign) {
-                signResponse = await (instance as any).connectAndSign(
+                signResponse = await instance.connectAndSign(
                   parameters.connectAndSign,
                 )
               } else if (parameters.connectWith) {
-                connectWithResponse = await (instance as any).connectWith({
+                connectWithResponse = await instance.connectWith({
                   method: parameters.connectWith.method,
                   params: parameters.connectWith.params,
                 })
@@ -164,13 +164,13 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
           const provider = await this.getProvider()
           if (signResponse)
             provider.emit('connectAndSign', {
-              accounts: accounts as Address[],
+              accounts,
               chainId: currentChainId,
               signResponse,
             })
           else if (connectWithResponse)
             provider.emit('connectWith', {
-              accounts: accounts as Address[],
+              accounts,
               chainId: currentChainId,
               connectWithResponse,
             })
@@ -178,9 +178,9 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
           return {
             accounts: (withCapabilities
               ? accounts.map((account) => ({
-                  address: account,
-                  capabilities: {},
-                }))
+                address: account,
+                capabilities: {},
+              }))
               : accounts) as never,
             chainId: currentChainId,
           }
@@ -229,8 +229,7 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
         // whereas viem uses direct parameters.
         // This is safe because both providers implement the same runtime interface
         // (on, removeListener, request); only the TypeScript signatures differ.
-        // TODO: potential improvement here to avoid cast?
-        return provider as unknown as Provider
+        return provider;
       },
 
       async isAuthorized() {
@@ -254,14 +253,14 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
       async switchChain(
         parameters: Compute<{
           addEthereumChainParameter?:
-            | ExactPartial<StrictOmit<ViemAddEthereumChainParameter, 'chainId'>>
-            | undefined
+          | ExactPartial<StrictOmit<ViemAddEthereumChainParameter, 'chainId'>>
+          | undefined
           chainId: number
         }>,
       ) {
         const { addEthereumChainParameter, chainId } = parameters
         const instance = await ensureMetamask()
-        const chain = config.chains.find((x) => x.id === chainId)
+        const chain = config.chains.find(({ id }) => id === chainId)
 
         if (!chain) {
           throw new SwitchChainError(new ChainNotConfiguredError())
@@ -282,11 +281,11 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
         // Convert viem AddEthereumChainParameter to MetaMask SDK format
         const chainConfiguration = {
           chainId: `0x${chainId.toString(16)}`,
-          rpcUrls: rpcUrls as string[] | undefined,
+          rpcUrls: rpcUrls,
           nativeCurrency:
             addEthereumChainParameter?.nativeCurrency ?? chain.nativeCurrency,
           chainName: addEthereumChainParameter?.chainName ?? chain.name,
-          blockExplorerUrls: blockExplorerUrls as string[] | undefined,
+          blockExplorerUrls: blockExplorerUrls,
           iconUrls: addEthereumChainParameter?.iconUrls,
         }
 
