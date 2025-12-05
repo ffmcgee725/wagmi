@@ -40,14 +40,14 @@ export type MetaMaskParameters = {
   dapp?: CreateMetamaskConnectEVMParameters['dapp'] | undefined
 } & OneOf<
   | {
-    /* Shortcut to connect and sign a message */
-    connectAndSign?: string | undefined
-  }
+      /* Shortcut to connect and sign a message */
+      connectAndSign?: string | undefined
+    }
   | {
-    // TODO: Strongly type `method` and `params`
-    /* Allow `connectWith` any rpc method */
-    connectWith?: { method: string; params: unknown[] } | undefined
-  }
+      // TODO: Strongly type `method` and `params`
+      /* Allow `connectWith` any rpc method */
+      connectWith?: { method: string; params: unknown[] } | undefined
+    }
 >
 
 metaMask.type = 'metaMask' as const
@@ -178,9 +178,9 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
           return {
             accounts: (withCapabilities
               ? accounts.map((account) => ({
-                address: account,
-                capabilities: {},
-              }))
+                  address: account,
+                  capabilities: {},
+                }))
               : accounts) as never,
             chainId: currentChainId,
           }
@@ -229,7 +229,7 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
         // whereas viem uses direct parameters.
         // This is safe because both providers implement the same runtime interface
         // (on, removeListener, request); only the TypeScript signatures differ.
-        return provider;
+        return provider
       },
 
       async isAuthorized() {
@@ -253,8 +253,8 @@ export function metaMask(parameters: MetaMaskParameters = {}) {
       async switchChain(
         parameters: Compute<{
           addEthereumChainParameter?:
-          | ExactPartial<StrictOmit<ViemAddEthereumChainParameter, 'chainId'>>
-          | undefined
+            | ExactPartial<StrictOmit<ViemAddEthereumChainParameter, 'chainId'>>
+            | undefined
           chainId: number
         }>,
       ) {
